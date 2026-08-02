@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth');
 const medicationRoutes = require('./routes/medications');
 
 const app = express();
+
 //Middle ware
 app.use(cors());
 app.use(express.json());
