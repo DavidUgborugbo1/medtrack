@@ -50,6 +50,27 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
+// Refill a medication (add to current supply)
+router.patch('/:id/refill', auth, async (req, res) => {
+  const { amount } = req.body;
+  if (!amount || isNaN(amount) || Number(amount) <= 0) {
+    return res.status(400).json({ message: 'A positive refill amount is required' });
+  }
+  try {
+    const updated = await db.query(
+      'UPDATE medications SET current_supply = current_supply + $1 WHERE id = $2 AND user_id = $3 RETURNING *',
+      [Number(amount), req.params.id, req.user.id]
+    );
+    if (updated.rows.length === 0) {
+      return res.status(404).json({ message: 'Medication not found' });
+    }
+    res.json(updated.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Delete a medication
 router.delete('/:id', auth, async (req, res) => {
   try {
