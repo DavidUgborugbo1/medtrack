@@ -4,11 +4,26 @@ const db = require('../config/db');
 const auth = require('../middleware/auth');
 
 // Log a dose (mark as taken or skipped)
+// Log a dose (mark as taken or skipped)
 router.post('/', auth, async (req, res) => {
   const { medication_id, status, scheduled_time } = req.body;
   try {
-    // Reduce supply by 1 if taken
     if (status === 'taken') {
+      // Check current supply first
+      const med = await db.query(
+        'SELECT current_supply FROM medications WHERE id = $1 AND user_id = $2',
+        [medication_id, req.user.id]
+      );
+
+      if (med.rows.length === 0) {
+        return res.status(404).json({ message: 'Medication not found' });
+      }
+
+      if (med.rows[0].current_supply <= 0) {
+        return res.status(400).json({ message: 'No supply left, please refill' });
+      }
+
+      // Only reduce if supply is above 0
       await db.query(
         'UPDATE medications SET current_supply = current_supply - 1 WHERE id = $1 AND user_id = $2',
         [medication_id, req.user.id]
@@ -32,23 +47,4 @@ router.post('/', auth, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-
-// Get all doses for a user
-router.get('/', auth, async (req, res) => {
-  try {
-    const doses = await db.query(
-      `SELECT doses.*, medications.name as medication_name 
-       FROM doses 
-       JOIN medications ON doses.medication_id = medications.id 
-       WHERE doses.user_id = $1 
-       ORDER BY doses.created_at DESC`,
-      [req.user.id]
-    );
-    res.json(doses.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
 module.exports = router;
