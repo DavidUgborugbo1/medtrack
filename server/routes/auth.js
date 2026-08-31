@@ -103,4 +103,19 @@ router.post("/reset-password", async (req, res) => {
   }
 });
 
+// Check if email exists
+router.post('/check-email', async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (user.rows.length === 0) {
+      return res.status(404).json({ message: 'No account found with that email' });
+    }
+    res.json({ message: 'Email found' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
