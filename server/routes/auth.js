@@ -80,7 +80,7 @@ router.post("/reset-password", async (req, res) => {
   const { email, newPassword } = req.body;
   try {
     //check if user exists
-    const user = await db.query("SELECT*FROM user WHERE email =$1", [email]);
+    const user = await db.query("SELECT id FROM users WHERE email = $1", [email]);
     if (user.rows.length === 0) {
       return res
         .status(404)
@@ -99,7 +99,7 @@ router.post("/reset-password", async (req, res) => {
     res.json({ message: "Password updated successfully" });
   } catch (err) {
     console.error(err);
-    resizeTo.status(500).json({ message: "Server Error" });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
